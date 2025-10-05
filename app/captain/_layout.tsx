@@ -96,6 +96,19 @@ export default function Layout() {
               drawerHideStatusBarOnOpen: true,
             }}
           />         
+          <Drawer.Screen
+               name="DOH"
+               options={{
+               drawerLabel: 'Daily On Hand',
+                title: 'Daily On Hand',
+               headerTitleAlign: 'center',
+               headerStyle: { backgroundColor: '#1E3A8A' },
+               headerTintColor: '#FFFFFF',
+              headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+              drawerHideStatusBarOnOpen: true,
+             }}
+          />
+
       </Drawer>
     </GestureHandlerRootView>
   );

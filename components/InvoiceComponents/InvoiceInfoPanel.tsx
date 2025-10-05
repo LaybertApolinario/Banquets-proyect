@@ -1,57 +1,67 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { InvoiceDetailData } from '@/types/events';
-import ExportPanel from '@/components/InvoiceComponents/ExportPanel';
+import React, { useMemo } from "react";
+import { View, ScrollView, StyleSheet } from "react-native";
+import InvoiceTable, { InvoiceRow } from "./InvoiceTable";
+import { DEFAULT_CONFIG, computeRow } from "./utils";
 
-interface InvoiceInfoPanelProps {
-  activeTab: string;
-  invoiceData: InvoiceDetailData;
-  onExport: (type: string) => void;
-}
+type Props = {
+  /** Filas de la invoice (pueden venir vacías) */
+  lines?: InvoiceRow[];
+  /** Modo de servicio */
+  mode?: "Cash" | "Hosted";
+  /**
+   * Tab actual. Debes pasarlo desde tu header/tabs:
+   *  - "view" | "edit" | "export"
+   * Si no lo pasas, queda "view" y no aparecerán inputs.
+   */
+  activeTab?: "view" | "edit" | "export";
+  /**
+   * Si ya traes el subtotal calculado desde afuera,
+   * puedes pasarlo y evitamos calcularlo aquí.
+   * (Este archivo NO dibuja el summary para no romper tu UI,
+   * pero lo dejamos disponible por si lo necesitas.)
+   */
+  externalSubtotal?: number;
+};
 
-export default function InvoiceInfoPanel({ 
-  activeTab, 
-  invoiceData, 
-  onExport 
-}: InvoiceInfoPanelProps) {
-  if (activeTab === 'view') {
-    return (
-      <View style={styles.infoPanel}>
-        <Text style={styles.infoPanelTitle}>📋 View Only</Text>
-        <Text style={styles.infoPanelText}>
-          Data can only be viewed. No changes can be made, Calculations are automatic.
-        </Text>
-        <Text style={styles.infoPanelText}>
-          Service Charge: {(invoiceData.serviceChargeRate * 100).toFixed(0)}% • Tax: {(invoiceData.taxRate * 100).toFixed(1)}%
-        </Text>
-      </View>
+export default function InvoiceInfoPanel({
+  lines,
+  mode = "Hosted",
+  activeTab = "view",
+  externalSubtotal,
+}: Props) {
+  const editable = activeTab === "edit";
+
+  // Subtotal seguro (por si te sirve en tu Summary)
+  const subtotal = useMemo(() => {
+    if (typeof externalSubtotal === "number") return externalSubtotal;
+    const rows = Array.isArray(lines) ? lines : [];
+    return rows.reduce(
+      (acc, l) => acc + computeRow(l, mode, DEFAULT_CONFIG).total,
+      0
     );
-  }
+  }, [externalSubtotal, lines, mode]);
 
-  if (activeTab === 'export') {
-    return <ExportPanel onExport={onExport} />;
-  }
+  return (
+    <View style={styles.container}>
+      {/* MUY IMPORTANTE: esto permite que los TextInput reciban foco */}
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        {/* Tabla: activamos edición SOLO cuando el tab es "edit" */}
+        <InvoiceTable lines={lines} mode={mode} editable={editable} />
 
-  return null;
+        {/* Si quieres renderizar tu resumen aquí, descomenta y usa "subtotal":
+        <View style={{ marginTop: 12 }}>
+          <InvoiceSummary subtotal={subtotal} servicePct={18} taxPct={7.5} />
+        </View>
+        */}
+      </ScrollView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  infoPanel: {
-    backgroundColor: "#132A4A",
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  infoPanelTitle: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  infoPanelText: {
-    color: '#D1D5DB',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
+  container: { flex: 1 },
 });
